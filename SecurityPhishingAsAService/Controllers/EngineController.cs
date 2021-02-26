@@ -28,8 +28,15 @@ namespace SecurityPhishingAsAService.Controllers
             var auth = new AuthConfig();
             await client.Images.CreateImageAsync(image,auth,progress);
             var ExposedPortss = new Dictionary<string,EmptyStruct>();
-            var PortsBind = new Dictionary<string, IList<PortBinding>>();
-            PortsBind.Add("25/tcp",null);
+            var PortBindings = new Dictionary<string, IList<PortBinding>>
+            {
+                {
+                    "25/tcp", new List<PortBinding>
+                    {
+                        new PortBinding {HostPort = "25/tcp"}
+                    }
+                }
+            };
             ExposedPortss.Add("25/tcp", default(EmptyStruct));
 
             var container = new CreateContainerParameters()
@@ -39,7 +46,7 @@ namespace SecurityPhishingAsAService.Controllers
                 ExposedPorts = ExposedPortss,
                 HostConfig = new HostConfig()
                 {
-                    PortBindings = PortsBind
+                    PortBindings = PortBindings
                 }
             };
             await client.Containers.CreateContainerAsync(container);
@@ -49,19 +56,73 @@ namespace SecurityPhishingAsAService.Controllers
         [HttpGet("Stop")]
         public async Task<bool> Stop()
         {
+           DockerClient client = new DockerClientConfiguration()
+                    .CreateClient();
+                var te = await client.Containers.ListContainersAsync(new ContainersListParameters()
+                {
+                    All = true
+                });
+                foreach (var con in te)
+                {
+                    
+                    foreach (var name in con.Names)
+                    {
+                        //Console.WriteLine(name);
+                        if (name == "/phishingasaservice_smtp")
+                        {
+                            await client.Containers.StopContainerAsync(con.ID, new ContainerStopParameters()
+                            {
+                                WaitBeforeKillSeconds = 1
+                            });
+                            await client.Containers.RemoveContainerAsync(con.ID, new ContainerRemoveParameters()
+                            {
+                                Force = true
+                            });
+                        }
+                    }
+                }
+
+                return true;
+        }
+
+        [HttpGet("Status")]
+        public async Task<string> Status()
+        {
+            string state = "";
             try
             {
                 DockerClient client = new DockerClientConfiguration()
                     .CreateClient();
-                await client.Containers.StopContainerAsync("phishingasaservice_smtp", null);
-                await client.Containers.RemoveContainerAsync("phishingasaservice_smtp", null);
-                return true;
+                var te = await client.Containers.ListContainersAsync(new ContainersListParameters()
+                {
+                    All = true
+                });
+                foreach (var con in te)
+                {
+                    
+                    foreach (var name in con.Names)
+                    {
+                        //Console.WriteLine(name);
+                        if (name == "/phishingasaservice_smtp")
+                        {
+                            if (con.State == "running")
+                            {
+                                state = "online";
+                            }
+                            else
+                            {
+                                state = "offline";
+                            }
+                        }
+                    }
+                }
+
+                return state;
             }
             catch
             {
-                return false;
+                return "offline";
             }
-           
         }
     }
 }

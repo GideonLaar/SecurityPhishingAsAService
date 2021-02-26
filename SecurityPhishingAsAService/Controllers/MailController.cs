@@ -15,16 +15,27 @@ namespace SecurityPhishingAsAService.Controllers
     [Route("[Controller]")]
     public class MailController : ControllerBase
     {
-        [HttpPost("SendMailTo/{from}/{subject}/{body}")]
-        public bool SendMail(string email, string from, string body, string subject)
+        [HttpPost("SendMailTo/{type}")]
+        public bool SendMail(string email, string from, string displayname, string subject, int type)
         {
             try
             {
+                
+                string html = System.IO.File.ReadAllText(String.Format("C:\\Developer\\Projects\\SecurityPhishingAsAService\\SecurityPhishingAsAService\\Templates\\Template{0}.html",type));
                 var smtpClient = new SmtpClient("localhost")
                 {
                     Port = 25
                 };
-                smtpClient.Send(from, email, subject, body);
+
+                MailMessage msg = new MailMessage();
+                //Console.WriteLine(html);
+                msg.Body = html;
+                msg.To.Add(email);
+                msg.Subject = subject;
+                msg.From = new MailAddress(from, displayname);
+                //msg.Sender = new MailAddress(from, displayname);
+                msg.IsBodyHtml = true;
+                smtpClient.Send(msg);
                 return true;
             }
             catch
