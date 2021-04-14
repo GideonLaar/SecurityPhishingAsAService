@@ -55,7 +55,7 @@ namespace SecurityPhishingAsAService.Controllers
                 {
                     try
                     {
-                        string html = System.IO.File.ReadAllText(String.Format("C:\\Developer\\Projects\\SecurityPhishingAsAService\\SecurityPhishingAsAService\\Templates\\Template{0}.html",type));
+                        string html = System.IO.File.ReadAllText(String.Format("Templates\\Template{0}.html",type));
                         var smtpClient = new SmtpClient("localhost")
                         {
                             Port = 25
